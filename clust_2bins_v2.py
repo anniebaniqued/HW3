@@ -151,8 +151,17 @@ def AutoClass(data, numClusters):
     print data[1:5]
 
     # initialize theta_k and normalize to sum to 1
-    theta_k = [1.0/numClusters] * numClusters
-    thetad_vec = [[1.0/numFeatures] * numFeatures] * numClusters
+    theta_k = []
+    for k in range(numClusters):
+        theta_k.append(1.0/numClusters)
+
+    thetad_vec = []
+    for k in range(numClusters):
+        temp = []
+        for d in range(numFeatures):
+            temp.append(1.0/numFeatures)
+        thetad_vec.append(temp)
+    print thetad_vec
 
     en_k = []
     log_lhood = -10000
@@ -161,7 +170,6 @@ def AutoClass(data, numClusters):
     epsilon = 0.001
 
     iteration = 0
-
 
     while abs((log_lhood - prev_lhood)/log_lhood)>epsilon:
         # EXPECTATION
@@ -365,13 +373,13 @@ def main():
 
     ############################ FOR AUTOCLASS ##################################
 
-    # dataset = file("adults-small.txt", "r")
-    # if dataset == None:
-    #     print "Unable to open data file"
+    dataset = file("adults-small.txt", "r")
+    if dataset == None:
+        print "Unable to open data file"
 
-    # data = parseInput(dataset, numExamples)
+    data = parseInput(dataset, numExamples)
     
-    # dataset.close()
+    dataset.close()
 
     #### For running k-means once using the specified number of clusters in the command line ####
     print "***********      AUTO-CLASS WITH K = " + str(numClusters) + "       ***********"
