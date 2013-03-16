@@ -152,7 +152,7 @@ def AutoClass(data, numClusters):
 
     # initialize theta_k and normalize to sum to 1
     theta_k = [1.0/numClusters] * numClusters
-    thetad_vec = [[1.0/numClusters] * numClusters] * numFeatures
+    thetad_vec = [[1.0/numFeatures] * numFeatures] * numClusters
 
     en_k = []
     log_lhood = -10000
@@ -179,7 +179,7 @@ def AutoClass(data, numClusters):
             for k in range(numClusters):
                 prod = 1.0
                 for d in range(numFeatures):
-                    prod *= (thetad_vec[d][k] ** data[n][d]) * (1 - thetad_vec[d][k]) ** (1 - data[n][d])
+                    prod *= (thetad_vec[k][d] ** data[n][d]) * (1 - thetad_vec[k][d]) ** (1 - data[n][d])
                 p[k] = theta_k[k] * prod
             log_lhood += math.log(max(p))
             for k in range(numClusters):
@@ -198,10 +198,9 @@ def AutoClass(data, numClusters):
 
         for k in range(numClusters):
             for d in range(numFeatures):
-                thetad_vec[d][k] = en_d1[k][d] / en[k]
+                thetad_vec[k][d] = en_d1[k][d] / en[k]
                 print en_d1[k][d]
                 print en[k]
-                print thetad_vec[d][k]
         print thetad_vec
 
         log_lhood_list.append(log_lhood)
