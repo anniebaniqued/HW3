@@ -1,0 +1,387 @@
+# clust.py
+# -------
+# YOUR NAME HERE
+
+import sys
+import numpy as np
+from pylab import *
+import random
+import math
+import utils
+from operator import add
+import matplotlib.pyplot as plt 
+from mpl_toolkits.mplot3d import Axes3D
+
+DATAFILE = "adults.txt"
+
+#validateInput()
+
+def validateInput():
+    if len(sys.argv) != 3:
+        return False
+    if sys.argv[1] <= 0:
+        return False
+    if sys.argv[2] <= 0:
+        return False
+    return True
+
+
+#-----------
+
+# modified to also take numExamples
+def parseInput(datafile, numExamples):
+    """
+    params datafile: a file object, as obtained from function `open`
+    returns: a list of lists
+
+    example (typical use):
+    fin = open('myfile.txt')
+    data = parseInput(fin)
+    fin.close()
+    """
+    data = []
+    for line in datafile:
+        instance = line.split(",")
+        instance = instance[:-1]
+        data.append(map(lambda x:float(x),instance))
+        if len(data) == numExamples:
+            break
+    return data
+
+
+def printOutput(data, numExamples):
+    for instance in data[:numExamples]:
+        print ','.join([str(x) for x in instance])
+
+def kMeans(data, numClusters):
+    muList = []
+    r_vectors = []
+
+    for i in range(numClusters):
+        muList.append(data[random.randint(0, len(data))])
+
+    for i in range(len(data)):
+        toAppend = []
+        for k in range(numClusters):
+            toAppend.append(0)
+        r_vectors.append(toAppend)
+
+    # convergence when no examples are reassigned
+    somethingChanged = True
+    while somethingChanged:
+        # setting the r vector: assigning examples to clusters
+        somethingChanged = False
+        # average mean squared distance
+        ave_msd = 0
+        for i in range(len(data)):
+            distances = []
+            for muVec in muList:
+                if not(isinstance(muVec,str)):
+                    distances.append(utils.squareDistance(data[i], muVec))
+            minDist = min(distances)
+            ave_msd += minDist
+            k = distances.index(minDist)
+            rVec = r_vectors[i]
+            if rVec[k] != 1: # data as been reassigned to different cluster 
+                somethingChanged = True
+            for j in range(len(rVec)):
+                if j == k:
+                    rVec[j] = 1
+                else:
+                    rVec[j] = 0
+            r_vectors[i] = rVec
+        ave_msd = ave_msd/len(data)
+
+        # recenter the prototype vectors (muVecs)
+        for k in range(len(muList)):
+            count = 0.0
+            vecSum = [0] * len(data[0]) # initialize vecSum to zero vector with the same length as a datum
+            for i in range(len(data)):
+                if r_vectors[i][k] == 1:
+                    vecSum = map(add, vecSum, data[i])
+                    count += 1.0
+            if count!=0:
+                muList[k] = [x/count for x in vecSum]
+            else:
+                muList[k] = 'Empty'
+
+    return muList,ave_msd
+
+def HAC(data, numClusters, metric):
+    e = []
+    for i in range(len(data)):
+        e.append([data[i]])
+
+    while len(e) > numClusters:
+        # find two closest clusters
+        minDist = sys.maxint
+        a = []
+        b = []
+        for i in range(len(e)-1):
+            for j in range(i+1, len(e)):
+                currDist = metric(e[i], e[j], utils.squareDistance)
+                if currDist < minDist:
+                    minDist = currDist
+                    a = e[i]
+                    b = e[j]
+
+        e.remove(a)
+        e.remove(b)
+        a.extend(b) # a is a cluster that now contains all the vectors that were in b
+
+        e.append(a)
+
+    return e
+
+
+def AutoClass(data, numClusters):
+
+    numFeatures = len(data[0]) 
+
+    # Initialize parameters
+    theta_c = []
+    for k in range(numClusters):
+        theta_c.append(1.0/numClusters)
+    theta_dk = [[random.random() for k in range(numClusters)] for d in range(numFeatures)] 
+    theta_dk = map(lambda vec: map(lambda x: x/float(sum(vec)), vec), theta_dk) # normalize 
+    
+    # Use mean values as a way to divide the continuous features into bins
+    total = [0] * numFeatures
+    for n in range(len(data)):
+        for d in range(numFeatures):
+            total[d] += data[n][d]
+    mean_val = map(lambda s: s/float(len(data)), total) 
+    
+    log_lhood = -10000
+    log_lhood_list = []
+    prev_lhood = -100000
+    epsilon = 0.00001 
+    iterations = 0
+
+    # Repeat until convergence
+    while abs((log_lhood - prev_lhood)/prev_lhood) > epsilon:
+
+        prev_lhood = log_lhood
+        log_lhood = 0
+
+        # EXPECTATION STEP
+        e_n_k = [0] * numClusters 
+        e_n_dk = [[0] * numClusters] * numFeatures
+        
+        for n in range(len(data)):
+
+            data[n] = map(lambda d: 1 if data[n][d] >= mean_val[d] else 0, range(numFeatures))
+            p_k = []
+
+            for k in range(numClusters):
+                prob_d = [(theta_dk[d][k]**data[n][d])*((1-theta_dk[d][k])**(1-data[n][d])) for d in range(numFeatures)]
+                p_k.append(theta_c[k]*reduce(lambda x, y: x*y, prob_d, 1))
+            
+            log_lhood += math.log(max(p_k)) 
+            post_n_k = map(lambda x: x/float(sum(p_k)), p_k)
+            e_n_k = map(lambda x, y: x+y, e_n_k, post_n_k)
+            
+            for d in range(numFeatures):
+                if data[n][d] == 1:
+                    e_n_dk[d] = map(lambda x, y: x+y, post_n_k, e_n_dk[d])
+
+        # MAXIMIZATION STEP
+        theta_c = map(lambda x: x/float(len(data)), e_n_k)
+        theta_dk = [[0] * numClusters] * numFeatures
+
+        for d in range(numFeatures):
+            theta_dk[d] = map(lambda x, y: x/float(y), e_n_dk[d], e_n_k)
+
+        log_lhood_list.append(log_lhood)
+
+        iterations += 1
+            
+    return log_lhood_list, iterations
+
+
+def scatterPlot3D(all_clus, metric):
+    # Create Map
+    col = ['red','green','blue','orange']
+
+    ## Scatter plot of the instances in 3 dimensions
+    plt.clf()
+    fig = plt.figure()
+    ax3D = fig.gca(projection='3d')
+    for clus in range(len(all_clus)):
+        x = []
+        y = []
+        z = []
+        for i in range(len(all_clus[clus])):
+            x.append(all_clus[clus][i][0])
+            y.append(all_clus[clus][i][1])
+            z.append(all_clus[clus][i][2])
+
+            p3d = ax3D.scatter(x, y, z, c=col[clus], marker='o')   
+    ax3D.set_xlabel('age')
+    ax3D.set_ylabel('education')
+    ax3D.set_zlabel('income')                                                                             
+    savefig("4b"+metric+".png")
+
+    plt.show()
+
+    return
+
+
+
+# main
+# ----
+# The main program loop
+# You should modify this function to run your experiments
+
+def main():
+    # Validate the inputs
+    if(validateInput() == False):
+        print "Usage: clust numClusters numExamples"
+        sys.exit(1);
+
+    numClusters = int(sys.argv[1])
+    numExamples = int(sys.argv[2])
+
+    #Initialize the random seed
+    
+    random.seed()
+
+    #Initialize the data
+
+    
+    dataset = file(DATAFILE, "r")
+    if dataset == None:
+        print "Unable to open data file"
+
+
+    data = parseInput(dataset, numExamples)
+    
+    
+    dataset.close()
+    # printOutput(data,numExamples)
+
+    # ==================== #
+    # WRITE YOUR CODE HERE #
+    # ==================== #
+
+    ############################ FOR K-MEANS ##################################
+
+    #### For running k-means once using the specified number of clusters in the command line ####
+    # print "***********      K - MEANS WITH K = " + str(numClusters) + "       ***********"
+    # muList, ave_msd = kMeans(data, numClusters)
+    # for i in range(0,len(muList)):
+    #     print "Center of cluster " + str(i+1) + " : " + str(muList[i])
+    #     print "Average Mean Squared Distance: " + str(ave_msd) 
+    # print "\n"
+
+    #### For plotting k vs. MSE ####     
+    # msd = []
+    # for numClusters in range(2,11):
+    #     muList, ave_msd = kMeans(data, numClusters)
+    #     msd.append(ave_msd)
+    #     print "***********      K - MEANS WITH K = " + str(numClusters) + "       ***********"
+    #     for i in range(0,len(muList)):
+    #         print "Center of cluster " + str(i+1) + " : " + str(muList[i])
+    #         print "\n"
+    #     print "Average Mean Squared Distance: " + str(ave_msd) 
+    #     print "\n\n"
+
+    # plt.clf()
+    # xs = range(2,11)
+    # ys = msd
+
+    # pl=plt.plot(xs,ys,color='b')
+
+    # plt.title("Graph 4(a)(a) Plot of K vs. MSE")
+    # plt.xlabel('k = number of clusters')
+    # plt.ylabel('mean squared error')
+
+    # plt.show()    
+
+    ############################ FOR HAC ALGORITHM ################################## 
+    # dataset = file("adults-small.txt", "r")
+    # if dataset == None:
+    #     print "Unable to open data file"
+
+    # data_small = parseInput(dataset, numExamples)
+    
+    # dataset.close()
+
+    # print "***********      HAC ALGORITHM = " + str(numClusters) + "       ***********"
+    # if(len(data_small)==100):
+    #     all_clus_min = HAC(data_small, numClusters, utils.cmin)
+    #     inst_per_clus_min = [len(all_clus_min[i]) for i in range(len(all_clus_min))] 
+    #     print inst_per_clus_min
+
+    #     scatterPlot3D(all_clus_min, "minimum")
+
+    #     all_clus_max = HAC(data_small, numClusters, utils.cmax)
+    #     inst_per_clus_max = [len(all_clus_max[i]) for i in range(len(all_clus_max))] 
+
+    #     print inst_per_clus_max
+
+    #     scatterPlot3D(all_clus_max, "maximum")
+
+    # if(len(data_small)==200):
+    #     all_clus_cmean = HAC(data_small, numClusters, utils.cmean)
+    #     inst_per_clus_cmean = [len(all_clus_cmean[i]) for i in range(len(all_clus_cmean))] 
+    #     print inst_per_clus_cmean
+
+    #     scatterPlot3D(all_clus_cmean, "mean")
+
+    #     all_clus_ccent = HAC(data_small, numClusters, utils.ccent)
+    #     inst_per_clus_ccent = [len(all_clus_ccent[i]) for i in range(len(all_clus_ccent))] 
+
+    #     print inst_per_clus_ccent
+
+    #     scatterPlot3D(all_clus_ccent, "centroid")
+
+    ############################ FOR AUTOCLASS ##################################
+
+    #### For running k-means once using the specified number of clusters in the command line ####
+    print "***********      AUTO-CLASS WITH K = " + str(numClusters) + "       ***********"
+    lhood, iteration = AutoClass(data, numClusters)
+    print iteration
+    for i in range(1,(len(lhood)+1)):
+        print "Log likelihood of iteration " + str(i) + ": " + str(lhood[i-1])
+    print "\n"
+
+    #### For plotting number of iterations vs. log likelihood for K=4####
+    pl = plt.plot(range(1,iteration+1),lhood)
+
+    plt.title('Auto-Class (K=4)' + ' Total Iterations: ' + str(iteration))
+    plt.xlabel('iterations')
+    plt.ylabel('log likelihood')
+    plt.axis([0,(iteration+1),-10000,-28000])
+
+    savefig('Auto_class_k4.png')
+
+    plt.show()
+
+    #### For plotting number of clusters vs. log-likelihood ###   
+    #### EXTRA CREDIT #####
+
+    llhood = []
+    for numClusters in range(2,11):
+        lhood, iteration = AutoClass(data, numClusters)
+        llhood.append(lhood[-1])
+
+    plt.clf()
+    xs = range(2,11)
+    ys = llhood 
+
+    pl = plt.plot(xs,ys,color='b')
+
+    plt.title("Auto-class (Number of clusters vs. Log likelihood)")
+    plt.xlabel('k = number of clusters')
+    plt.ylabel('log likelihood')
+    plt.axis([2,11,-10000,-30000])
+    
+    savefig('Auto_class_extracredit.png')
+
+    plt.show()  
+
+
+if __name__ == "__main__":
+    validateInput()
+    main()
