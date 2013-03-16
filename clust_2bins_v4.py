@@ -8,6 +8,7 @@ from pylab import *
 import random
 import math
 import utils
+import time
 from operator import add
 import matplotlib.pyplot as plt 
 from mpl_toolkits.mplot3d import Axes3D
@@ -142,15 +143,16 @@ def AutoClass(data, numClusters):
     theta_c = []
     for k in range(numClusters):
         theta_c.append(1.0/numClusters)
+
     theta_dk = [[random.random() for k in range(numClusters)] for d in range(numFeatures)] 
-    theta_dk = map(lambda vec: map(lambda x: x/float(sum(vec)), vec), theta_dk) # normalize 
+    theta_dk = map(lambda vec: map(lambda x: x/float(sum(vec)), vec), theta_dk) 
     
     # Use mean values as a way to divide the continuous features into bins
     total = [0] * numFeatures
     for n in range(len(data)):
         for d in range(numFeatures):
             total[d] += data[n][d]
-    mean_val = map(lambda s: s/float(len(data)), total) 
+    mean_val = map(lambda x: x/float(len(data)), total) 
     
     log_lhood = -10000
     log_lhood_list = []
@@ -164,28 +166,31 @@ def AutoClass(data, numClusters):
         prev_lhood = log_lhood
         log_lhood = 0
 
-        # EXPECTATION STEP
+        ##### EXPECTATION STEP
         e_n_k = [0] * numClusters 
         e_n_dk = [[0] * numClusters] * numFeatures
         
         for n in range(len(data)):
 
-            data[n] = map(lambda d: 1 if data[n][d] >= mean_val[d] else 0, range(numFeatures))
+            data[n] = map(lambda d: 0 if data[n][d] < mean_val[d] else 1, range(numFeatures))
             p_k = []
 
             for k in range(numClusters):
-                prob_d = [(theta_dk[d][k]**data[n][d])*((1-theta_dk[d][k])**(1-data[n][d])) for d in range(numFeatures)]
-                p_k.append(theta_c[k]*reduce(lambda x, y: x*y, prob_d, 1))
+                lhood = 1.0
+                for d in range(numFeatures):
+                    lhood *= theta_dk[d][k] ** data[n][d] * ((1-theta_dk[d][k]) ** (1-data[n][d]))
+                p_k.append( theta_c[k] * lhood)
             
             log_lhood += math.log(max(p_k)) 
+
             post_n_k = map(lambda x: x/float(sum(p_k)), p_k)
-            e_n_k = map(lambda x, y: x+y, e_n_k, post_n_k)
+            e_n_k = map(lambda x, y: x + y, e_n_k, post_n_k)
             
             for d in range(numFeatures):
-                if data[n][d] == 1:
-                    e_n_dk[d] = map(lambda x, y: x+y, post_n_k, e_n_dk[d])
+                if data[n][d]==1:
+                    e_n_dk[d] = map(lambda x, y: x + y, post_n_k, e_n_dk[d])
 
-        # MAXIMIZATION STEP
+        ##### MAXIMIZATION STEP
         theta_c = map(lambda x: x/float(len(data)), e_n_k)
         theta_dk = [[0] * numClusters] * numFeatures
 
@@ -267,12 +272,14 @@ def main():
     ############################ FOR K-MEANS ##################################
 
     #### For running k-means once using the specified number of clusters in the command line ####
-    # print "***********      K - MEANS WITH K = " + str(numClusters) + "       ***********"
-    # muList, ave_msd = kMeans(data, numClusters)
-    # for i in range(0,len(muList)):
-    #     print "Center of cluster " + str(i+1) + " : " + str(muList[i])
-    #     print "Average Mean Squared Distance: " + str(ave_msd) 
-    # print "\n"
+    print "***********      K - MEANS WITH K = " + str(numClusters) + "       ***********"
+    start_time = time.time()
+    muList, ave_msd = kMeans(data, numClusters)
+    print "%f seconds" % (time.time() - start_time)
+    for i in range(0,len(muList)):
+        print "Center of cluster " + str(i+1) + " : " + str(muList[i])
+        print "Average Mean Squared Distance: " + str(ave_msd) 
+    print "\n"
 
     #### For plotting k vs. MSE ####     
     # msd = []
@@ -338,25 +345,27 @@ def main():
 
     ############################ FOR AUTOCLASS ##################################
 
-    #### For running k-means once using the specified number of clusters in the command line ####
+    ### For running k-means once using the specified number of clusters in the command line ####
     print "***********      AUTO-CLASS WITH K = " + str(numClusters) + "       ***********"
+    start_time = time.time()
     lhood, iteration = AutoClass(data, numClusters)
-    print iteration
+    print "%f seconds" % (time.time() - start_time)
+
     for i in range(1,(len(lhood)+1)):
         print "Log likelihood of iteration " + str(i) + ": " + str(lhood[i-1])
     print "\n"
 
     #### For plotting number of iterations vs. log likelihood for K=4####
-    pl = plt.plot(range(1,iteration+1),lhood)
+    # pl = plt.plot(range(1,iteration+1),lhood)
 
-    plt.title('Auto-Class (K=4)' + ' Total Iterations: ' + str(iteration))
-    plt.xlabel('iterations')
-    plt.ylabel('log likelihood')
-    plt.axis([0,(iteration+1),-10000,-28000])
+    # plt.title('Auto-Class (K=4)' + ' Total Iterations: ' + str(iteration))
+    # plt.xlabel('iterations')
+    # plt.ylabel('log likelihood')
+    # plt.axis([0,(iteration+1),-10000,-28000])
 
-    savefig('Auto_class_k4.png')
+    # savefig('Auto_class_k4_more.png')
 
-    plt.show()
+    # plt.show()
 
     #### For plotting number of clusters vs. log-likelihood ###   
     #### EXTRA CREDIT #####
@@ -375,9 +384,9 @@ def main():
     plt.title("Auto-class (Number of clusters vs. Log likelihood)")
     plt.xlabel('k = number of clusters')
     plt.ylabel('log likelihood')
-    plt.axis([2,11,-10000,-30000])
+    plt.axis([2,11,-10000,-14000])
     
-    savefig('Auto_class_extracredit.png')
+    savefig('Auto_class_extracredit_4.png')
 
     plt.show()  
 
