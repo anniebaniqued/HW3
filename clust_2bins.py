@@ -199,9 +199,11 @@ def AutoClass(data, numClusters):
         for k in range(numClusters):
             for d in range(numFeatures):
                 thetad_vec[d][k] = en_d1[k][d] / en[k]
-                print en_d1[k][d]
-                print en[k]
-                print thetad_vec[d][k]
+                #print en_d1[k][d]
+                #print en[k]
+                #print thetad_vec[d][k]
+                #print en_d1
+                #print en
         print thetad_vec
 
         log_lhood_list.append(log_lhood)
