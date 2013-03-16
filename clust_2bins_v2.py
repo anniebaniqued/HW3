@@ -166,14 +166,25 @@ def AutoClass(data, numClusters):
     while abs((log_lhood - prev_lhood)/log_lhood)>epsilon:
         # EXPECTATION
         # number of features
-        en = [0] * numClusters
-        # deal with continuous features by splitting into binary ranges
-        en_d1 = [[0] * numFeatures] * numClusters
+        en = []
+        en_d1 = []
+        for k in range(numClusters):
+            en.append(0)
+            temp = []
+            for d in range(numFeatures):
+                temp.append(0)
+            en_d1.append(temp)
 
         prev_lhood = log_lhood
         log_lhood = 0.0
 
-        post = [[0] * numClusters] * len(data)
+        post = []
+        for n in range(len(data)):
+            temp = []
+            for k in range(numClusters):
+                temp.append(0)
+            post.append(temp)
+
         for n in range(len(data)):
             p = [0] * numClusters
             for k in range(numClusters):
