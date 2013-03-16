@@ -138,6 +138,7 @@ def AutoClass(data, numClusters):
     numFeatures = len(data[0])
 
     # code to convert continuous data to binary; features 0, 9, 10, 44, 45, 46 are continuous
+
     for d in range(len(data[0])):
         if isinstance(data[0][d], int):
             continue
@@ -145,10 +146,14 @@ def AutoClass(data, numClusters):
         maxVal = max(feature_list)
         minVal = min(feature_list)
         toSplit = (maxVal + minVal) / 2.0
+        print "maxVal : " + str(maxVal) + " d: " + str(d)
+        print "minVal : " + str(minVal) + " d: " + str(d)
+
         binary_list = [0 if x <= toSplit else 1 for x in feature_list]
         for n in range(len(data)):
             data[n][d] = binary_list[n]
-    print data[1:5]
+
+    print "data: " + str(data)
 
     # initialize theta_k and normalize to sum to 1
     theta_k = []
@@ -201,28 +206,33 @@ def AutoClass(data, numClusters):
                 prod = 1.0
                 for d in range(numFeatures):
                     prod *= (thetad_vec[k][d] ** data[n][d]) * (1 - thetad_vec[k][d]) ** (1 - data[n][d])
+                #print "prod: " + str(prod) + " k: " + str(k)
                 p[k] = theta_k[k] * prod
             log_lhood += math.log(max(p))
             for k in range(numClusters):
                 post[n][k] = p[k] / sum(p)
                 en[k] += post[n][k]
 
+
             for d in range(numFeatures):
                 for k in range(numClusters):
                     if data[n][d] == 1:
                         en_d1[k][d] += post[n][k]
-                       
+        """print "p: " + str(p)
+        print "sump :" + str(sum(p))
+        print "p/sump: " + str(p[0] / sum(p))
+        print "post: " + str(post)    """     
         # MAXIMIZATION
         for k in range(numClusters):
             theta_k[k] = en[k] / len(data)
-        print theta_k
+        print "theta_k: " + str(theta_k)
 
         for k in range(numClusters):
             for d in range(numFeatures):
                 thetad_vec[k][d] = en_d1[k][d] / en[k]
-                print en_d1[k][d]
-                print en[k]
-        print thetad_vec
+                print "en_d1[k][d]: " + str(en_d1[k][d])
+                print "en[k]: " + str(en[k])
+        print "thetad_vec: " + str(thetad_vec)
 
         log_lhood_list.append(log_lhood)
         print log_lhood
