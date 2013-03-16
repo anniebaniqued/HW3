@@ -186,7 +186,9 @@ def AutoClass(data, numClusters):
             post.append(temp)
 
         for n in range(len(data)):
-            p = [0] * numClusters
+            p = []
+            for k in range(numClusters):
+                p.append(0)
             for k in range(numClusters):
                 prod = 1.0
                 for d in range(numFeatures):
@@ -363,13 +365,13 @@ def main():
 
     ############################ FOR AUTOCLASS ##################################
 
-    dataset = file("adults-small.txt", "r")
-    if dataset == None:
-        print "Unable to open data file"
+    # dataset = file("adults-small.txt", "r")
+    # if dataset == None:
+    #     print "Unable to open data file"
 
-    data = parseInput(dataset, numExamples)
+    # data = parseInput(dataset, numExamples)
     
-    dataset.close()
+    # dataset.close()
 
     #### For running k-means once using the specified number of clusters in the command line ####
     print "***********      AUTO-CLASS WITH K = " + str(numClusters) + "       ***********"
