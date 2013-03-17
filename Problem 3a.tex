@@ -1,0 +1,40 @@
+\documentclass[12pt]{scrartcl}
+\usepackage{latexsym}
+\usepackage{amssymb,amsmath}
+\usepackage[pdftex]{graphicx}
+
+
+\topmargin = 0.1in \textwidth=5.7in \textheight=8.6in
+
+\oddsidemargin = 0.2in \evensidemargin = 0.2in
+
+
+\begin{document}
+
+3(a) \\
+
+We have that the loss function for k-means is as follows: \\
+
+\begin{center}
+$\sum_n r_{nk} ||\textbf{\textit{x}}_n - \textit{\textbf{$\mu$}}_k||^2$  \\
+$\sum_n r_{nk} (\textbf{\textit{x}}_n - \textit{\textbf{$\mu$}}_k)(\textbf{\textit{x}}_n - \textit{\textbf{$\mu$}}_k)$ \\
+$\sum_n r_{nk} [(x_n^1 - \mu_k^1)^2 + (x_n^2 - \mu_k^2)^2 + \ldots + (x_n^n - \mu_k^n)^2]$ \\
+\end{center}
+
+
+We perform gradient descent on this loss function by taking the partial derivative with respect to each entry in the \textbf{\textit{$\mu$}} vector: \\
+
+\begin{center}
+(PARTIAL MU-K, ALSO HOW TO BOLD MU-K): $\sum_n r_{nk} 2(\textbf{\textit{$\mu$}}_k - \textbf{\textit{x}}_n) = 0$\\
+
+Solving for $\mu_k$ we get \\
+
+$\sum_n r_{nk} \textbf{\textit{$\mu$}}_k = \sum_n r_{nk} \textbf{\textit{x}}_n$ and \\
+$\mu_k = \frac{\sum_n r_{nk} \textbf{\textit{x}}_n}{\sum_n r_{nk}}$
+\end{center}
+
+To derive the update rule for $r_{nk}$ we notice that we have the constraint $\sum_k r_{nk} = 1$. To minimize the loss function, you set $r_{nk} = 1$ when for the argument where $||\textbf{\textit{x}}_n - \mu_k||^2$ is minimized. In more compact notation, this is: \\
+
+$r_{nk} = 1$ for $k = $ argmin$_{k'}$ $||\textbf{\textit{x}}_n - \mu_{k'}||^2$, and $r_{nk} = 0 $ otherwise.
+
+\end{document}
