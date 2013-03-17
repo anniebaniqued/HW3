@@ -160,7 +160,27 @@ In this case, if we assume a $Beta(1,1)$ prior, that's like saying the team has 
   \section*{Problem 3}
   \Problem
         \begin{enumerate}
-        \Part
+        \Part We have that the loss function for k-means is as follows: 
+\begin{center}
+$\displaystyle\sum_n\sum_k r_{nk} ||\textbf{\textit{x}}_n - \textit{\textbf{$\mu$}}_k||^2$  \\
+$\displaystyle\sum_n\sum_k r_{nk} (\textbf{\textit{x}}_n - \textit{\textbf{$\mu$}}_k)\cdot (\textbf{\textit{x}}_n - \textit{\textbf{$\mu$}}_k)$ \\
+$\displaystyle\sum_n\sum_k r_{nk} [(x_n^1 - \mu_k^1)^2 + (x_n^2 - \mu_k^2)^2 + \ldots + (x_n^n - \mu_k^n)^2]$ \\
+\end{center}
+
+
+We perform gradient descent on this loss function by taking the partial derivative with respect to each entry in the \textbf{\textit{$\mu$}} vector: 
+\begin{center}
+$\displaystyle\frac{\partial L}{\partial \mu_k} = \sum_n 2 r_{nk} (\textbf{\textit{$\mu$}}_k - \textbf{\textit{x}}_n) = 0$\medskip
+
+Solving for $\mu_k$ we get \medskip
+
+$\displaystyle\sum_n r_{nk} \textbf{\textit{$\mu$}}_k = \sum_n r_{nk} \textbf{\textit{x}}_n$ and \\
+$\displaystyle\mu_k = \frac{\sum_n r_{nk} \textbf{\textit{x}}_n}{\sum_n r_{nk}}$ which is exactly the update rule for the $\mu_k$'s.
+\end{center}
+To derive the update rule for $r_{nk}$ we notice that we have the constraint $\displaystle \sum_k r_{nk} = 1$. To minimize the loss function, you set $r_{nk} = 1$ when for the argument where $||\textbf{\textit{x}}_n - \mu_k||^2$ is minimized. In more compact notation, this is: 
+\begin{center}
+$r_{nk} = 1$ for $k = $ argmin$_{k'}$ $||\textbf{\textit{x}}_n - \mu_{k'}||^2$, and $r_{nk} = 0 $ otherwise. \end{center}
+ 
         \Part PCA and k-means can both be used as feature compression techniques. PCA is used as a dimensionality reduction technique to produce a new set of orthonormal features, called principal components, which are the most salient features of the data. Under the squared-loss compression interpretation, PCA tries to make the projections as close as possible to the original data in as few dimensions as possible and minimize the reconstruction error when carrying out the transformation. Meanwhile k-means attempts to assign data to different clusters while updating the centroid of each cluster according to the data that belong to it, all to attempt to minimize its squared loss objective. If we were to replace each datum with its prototype, this would also be a sort of compression of the data set. However, this kind of compression is not of the dimensionality of the data, but rather of summarizing each individual data point by clumping it with the prototype point in the cluster to which it belongs. \\
 
         K-means requires a parameter in its model, the number of clusters to find, and the choice for this parameter, which may be difficult to make, has a huge effect on the algorithm’s effectiveness. K-means is very effective when a small number of clusters is sufficient to represent the data while it is not very appropriate to use k-means when the number of clusters is large compared to the number of data points. PCA can run on any data set and will have good results on data that can be linearly reduced. PCA works especially well if the data can also be represented well in a small number of dimensions. It would not be appropriate to use PCA on a dataset that cannot be linearly reduced or a dataset that requires a large number of dimensions to represent well. PCA doesn’t do well where there is no linear reduction where the first few components capture enough variance or if there’s low correlation between the different dimensions of the data. \\
